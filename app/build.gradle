@@ -47,4 +47,7 @@ dependencies {
     // ML Kit for Text Recognition
     implementation 'com.google.mlkit:text-recognition:16.0.0'
     implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
+
+    // OkHttp
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 }

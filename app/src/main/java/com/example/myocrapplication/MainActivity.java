@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
 import android.content.DialogInterface;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -34,11 +36,20 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+
     private static final int REQUEST_CAMERA_PERMISSION = 1;
 
     private PreviewView viewFinder; // PreviewViewの参照
     private Button captureButton;
+    private Button settingButton;
     private TextView textView;
     String outputDirectory;
 
@@ -48,9 +59,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // コンポーネントの取得
+        viewFinder    = findViewById(R.id.viewFinder);
         textView      = findViewById(R.id.textView);
         captureButton = findViewById(R.id.captureButton);
-        viewFinder    = findViewById(R.id.viewFinder);
+        settingButton = findViewById(R.id.buttonOpenSettings);
+
+        // 設定画面を開く
+        settingButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SettingActivity.class);
+            startActivity(intent);
+        });
 
         // ファイルを作るディレクトリ
         outputDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath();
@@ -144,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
                                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
+                                        invokeLambdaFunction(ocrResult);
                                         dialog.dismiss();
                                     }
                                 })
@@ -156,5 +175,73 @@ public class MainActivity extends AppCompatActivity {
             Log.e("OCR", "画像ファイルの読み込みエラー", e);
         }
     }
+    private void invokeLambdaFunction(String data) {
+        OkHttpClient client = new OkHttpClient();
 
+        // JSONとして文字列を送信
+        MediaType JSON = MediaType.get("application/json; charset=utf-8");
+        String jsonBody = "{\"message\": \"" + data + "\"}";
+        Log.i(TAG, jsonBody);
+        RequestBody body = RequestBody.create(jsonBody, JSON);
+
+        SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        String lambdaUrl = preferences.getString("LambdaUrl", ""); // デフォルトは空文字列
+        //String cgiUrl = preferences.getString("CgiUrl", "");
+
+        Request request = new Request.Builder()
+                .url(lambdaUrl)
+                .post(body)
+                .build();
+
+        // 非同期でリクエストを送信
+        new Thread(() -> {
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful()) {
+                    String response_string = response.body().string();
+                    Log.i(TAG, "Lambda Response: " + response_string);
+                    //showMessageDialog("Lambda Response", response_string);
+
+                    // Show confirm activity(form) to send data to cloud
+                    Intent intent = new Intent(MainActivity.this, ConfirmActivity.class);
+                    intent.putExtra("response_json", response_string);
+                    startActivity(intent);
+                } else {
+                    Log.e(TAG, "Lambda Call Failed: " + response.code());
+                    showMessageDialog("Server Error", "解析に失敗しました");
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private void showMessageDialog(String title, String message) {
+        // runOnUiThread を使ってメインスレッドでダイアログを表示
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle(title);
+                builder.setMessage(message);
+
+                builder.setPositiveButton("はい", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // OKボタンがクリックされたときの処理
+                        dialog.dismiss();
+                    }
+                });
+
+                builder.setNegativeButton("いいえ", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // キャンセルボタンがクリックされたときの処理
+                        dialog.dismiss();
+                    }
+                });
+
+                builder.show();
+            }
+        });
+    }
 }
