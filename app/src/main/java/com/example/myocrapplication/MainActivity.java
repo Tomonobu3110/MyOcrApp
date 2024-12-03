@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         // コンポーネントの取得
         viewFinder    = findViewById(R.id.viewFinder);
-        textView      = findViewById(R.id.textView);
+        //textView      = findViewById(R.id.textView);
         captureButton = findViewById(R.id.captureButton);
         settingButton = findViewById(R.id.buttonOpenSettings);
 
@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                         // OCR結果をTextViewに設定
                         String ocrResult = visionText.getText();
                         // OCR結果を表示
-                        textView.setText(ocrResult);
+                        //textView.setText(ocrResult);
                         // 同じ内容をダイアログで表示
                         new AlertDialog.Builder(MainActivity.this)
                                 .setTitle("OCR結果")
