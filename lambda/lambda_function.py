@@ -4,6 +4,10 @@ import re
 import difflib
 from collections import Counter
 
+# データベース
+from items import category_items
+from shops import shop_list
+
 # ログ設定
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -33,11 +37,7 @@ def lambda_handler(event, context):
         print(f"Console log: Received message: {message}")  # コンソール出力
         
         # お店
-        shop = ""
-        if "FamilyMart" in message:
-            shop = "ファミマ"
-        if "まいばすけっと" in message:
-            shop = "まいばすけっと"
+        shop = find_shop_name(message, shop_list, 0.8)
 
         # 日付
         date = ""
@@ -135,64 +135,6 @@ def contains_similar_string(long_string, target_string, threshold=0.6):
             return True
     return False
 
-# JSON形式のデータ（例）
-category_items_json = '''
-[
-    { 
-        "category": "ワイン", 
-        "item": [
-            "ヴェラタティント", 
-            "レインボーLカベルネ"
-        ]
-    },
-    { 
-        "category": "お酒", 
-        "item": [ 
-            "アサヒ生ビール",
-            "ハイボール",
-            "アップルパンチ500",
-            "196STゼロWレモン"
-        ]
-    },
-    {
-        "category": "アイス",
-        "item": [
-            "雪見だいふく"
-        ]
-    },
-    {
-        "category": "コーヒー",
-        "item": [
-            "ブレンド",
-            "ワンダモーニングショット"
-        ]
-    },
-    {
-        "category": "カフェラテ",
-        "item": [
-            "カフェラテ"
-        ]
-    },
-    {
-        "category": "お昼ごはん",
-        "item": [
-            "コク旨博多豚骨",
-            "辛カップラーメン"
-        ]
-    },
-    {
-        "category": "ドリンク",
-        "item": [
-            "ルイボスティー",
-            "ザバスミルクヨーグルト"
-        ]
-    }
-]
-'''
-
-# JSONをパース
-category_items = json.loads(category_items_json)
-
 # メッセージに基づいて品名をチェックする関数
 def add_items_from_message(message, items):
     # 各カテゴリとその品名リストをチェック
@@ -204,3 +146,40 @@ def add_items_from_message(message, items):
         for item in item_list:
             if contains_similar_string(message, item, 0.7):  # 類似度0.7を使用
                 items.append(category)
+
+import difflib
+
+# 店舗名を見つける関数
+def find_shop_name(src_string, shop_list, threshold=0.8):
+    shop_name = ""
+    
+    for shop_data in shop_list:
+        shop = shop_data["shop"]
+        candidates = shop_data.get("candidates", [])
+        place_list = shop_data.get("place_list", [])
+        
+        # ショップの候補をチェック
+        for candidate in candidates:
+            if contains_similar_string(src_string, candidate, threshold):
+                shop_name = shop
+                break
+        
+        # ショップが見つかり、place_list が存在する場合
+        if shop_name and place_list:
+            for place_data in place_list:
+                place = place_data["place"]
+                place_candidates = place_data.get("candidates", [])
+                
+                # 場所の候補をチェック
+                for candidate in place_candidates:
+                    if contains_similar_string(src_string, candidate, threshold):
+                        shop_name = place + shop
+                        break
+    
+    return shop_name
+
+# テストデータ
+src_string = "ファミマで買い物したけどソニーシティにあった"
+shop_name = find_shop_name(src_string, shop_list)
+
+print(f"Detected shop name: {shop_name}")
