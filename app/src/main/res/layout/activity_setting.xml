@@ -20,10 +20,22 @@
             android:hint="Lambda URL" />
 
         <EditText
-            android:id="@+id/editTextCgiUrl"
+            android:id="@+id/editTextCgi1Url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="CGI URL" />
+            android:hint="CGI 1 URL (個人)" />
+
+        <EditText
+            android:id="@+id/editTextCgi2Url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="CGI 2 URL (家計)" />
+
+        <EditText
+            android:id="@+id/editTextAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="account (登録名)" />
 
         <Button
             android:id="@+id/buttonSaveSettings"

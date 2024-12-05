@@ -47,7 +47,13 @@
                 android:id="@+id/buttonSubmit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="送信" />
+                android:text="送信(個人)" />
+
+            <Button
+                android:id="@+id/buttonSubmitOmm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="送信(家計)" />
 
             <Button
                 android:id="@+id/buttonCancel"

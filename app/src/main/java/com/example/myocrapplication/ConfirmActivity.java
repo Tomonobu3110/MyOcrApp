@@ -19,84 +19,45 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 public class ConfirmActivity extends Activity {
+    private EditText editTextStore;
+    private EditText editTextDate;
+    private EditText editTextPayment;
+    private EditText editTextItem;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_confirm);
 
-        EditText editTextStore = findViewById(R.id.editTextStore);
-        EditText editTextDate = findViewById(R.id.editTextDate);
-        EditText editTextPayment = findViewById(R.id.editTextPayment);
-        EditText editTextItem = findViewById(R.id.editTextItem);
+        // EditTexts
+        editTextStore = findViewById(R.id.editTextStore);
+        editTextDate = findViewById(R.id.editTextDate);
+        editTextPayment = findViewById(R.id.editTextPayment);
+        editTextItem = findViewById(R.id.editTextItem);
+
+        // Buttons
         Button buttonSubmit = findViewById(R.id.buttonSubmit);
+        Button buttonSubmitOmm = findViewById(R.id.buttonSubmitOmm);
         Button buttonCancel = findViewById(R.id.buttonCancel);
 
-        // 送信ボタンのクリックリスナー
+        // 送信ボタンのクリックリスナー(個人)
         buttonSubmit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String store = editTextStore.getText().toString();
-                String date_in = editTextDate.getText().toString();
-                String payment = editTextPayment.getText().toString();
-                String item = editTextItem.getText().toString();
+                SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+                String cgiUrl = preferences.getString("CgiUrl", "");
+                checkAndSubmit(cgiUrl, "private");
+            }
+        });
 
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy年MM月dd日");
-                SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy/MM/dd");
-                String date_out;
-                try {
-                    // 入力文字列を Date に変換
-                    Date date_org = inputFormat.parse(date_in);
-                    // Date を出力フォーマットの文字列に変換
-                    date_out = outputFormat.format(date_org);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    Toast.makeText(ConfirmActivity.this, "日付のフォーマットが不正です", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // 入力値を確認
-                if (store.isEmpty() || date_out.isEmpty() || payment.isEmpty() || item.isEmpty()) {
-                    Toast.makeText(ConfirmActivity.this, "全ての項目を入力してください", Toast.LENGTH_SHORT).show();
-                } else {
-                    SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
-                    //String lambdaUrl = preferences.getString("LambdaUrl", ""); // デフォルトは空文字列
-                    String cgiUrl = preferences.getString("CgiUrl", "");
-
-                    if (cgiUrl.isEmpty()) {
-                        Toast.makeText(ConfirmActivity.this, "CGI URL が設定されていません", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    // フォーム送信処理
-                    new Thread(() -> {
-                        try {
-                            FormSubmitter submitter = new FormSubmitter(cgiUrl);
-                            // パラメータを追加
-                            submitter.addField("dtkind", date_out); // 入出金日
-                            submitter.addField("date", date_out); // 指定日
-                            submitter.addField("group1", "0"); // 分類
-                            submitter.addField("group2", "");
-                            submitter.addField("detail", encodeToEucJp(store + " " + item)); // 詳細
-                            submitter.addField("acount", "private"); // 入出金対象
-                            submitter.addField("card", "checked"); // カード決済
-                            submitter.addField("inout", "out"); // 出金
-                            submitter.addField("amount", payment); // 入出金額
-                            submitter.addField("page", "paymentLogic"); // ページ
-                            submitter.submitForm();
-
-                            // UIスレッドでトーストを表示
-                            runOnUiThread(() -> {
-                                Toast.makeText(ConfirmActivity.this, "送信しました: " + store, Toast.LENGTH_SHORT).show();
-                                finish(); // アクティビティを閉じる
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            runOnUiThread(() -> {
-                                Toast.makeText(ConfirmActivity.this, "送信に失敗しました", Toast.LENGTH_SHORT).show();
-                            });
-                        }
-                    }).start();
-                }
+        // 送信ボタンのクリックリスナー(家計)
+        buttonSubmitOmm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+                String cgiUrl  = preferences.getString("Cgi2Url", "");
+                String account = preferences.getString("Account", "");
+                checkAndSubmit(cgiUrl, account);
             }
         });
 
@@ -136,6 +97,76 @@ public class ConfirmActivity extends Activity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public void checkAndSubmit(String cgiUrl, String account) {
+        String store   = editTextStore.getText().toString();
+        String date_in = editTextDate.getText().toString();
+        String payment = editTextPayment.getText().toString();
+        String item    = editTextItem.getText().toString();
+
+        SimpleDateFormat inputFormat  = new SimpleDateFormat("yyyy年MM月dd日");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy/MM/dd");
+        String date_out;
+        try {
+            // 入力文字列を Date に変換
+            Date date_org = inputFormat.parse(date_in);
+            // Date を出力フォーマットの文字列に変換
+            date_out = outputFormat.format(date_org);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            Toast.makeText(ConfirmActivity.this, "日付のフォーマットが不正です", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 入力値を確認
+        if (store.isEmpty() || date_out.isEmpty() || payment.isEmpty() || item.isEmpty()) {
+            Toast.makeText(ConfirmActivity.this, "全ての項目を入力してください", Toast.LENGTH_SHORT).show();
+        } else {
+            SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+            //String lambdaUrl = preferences.getString("LambdaUrl", ""); // デフォルトは空文字列
+            //String cgiUrl = preferences.getString("CgiUrl", "");
+
+            if (cgiUrl.isEmpty()) {
+                Toast.makeText(ConfirmActivity.this, "CGI URL が設定されていません", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (account.isEmpty()) {
+                Toast.makeText(ConfirmActivity.this, "登録名が設定されていません", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // フォーム送信処理
+            new Thread(() -> {
+                try {
+                    FormSubmitter submitter = new FormSubmitter(cgiUrl);
+                    // パラメータを追加
+                    submitter.addField("dtkind", date_out); // 入出金日
+                    submitter.addField("date", date_out); // 指定日
+                    submitter.addField("group1", "0"); // 分類
+                    submitter.addField("group2", "");
+                    submitter.addField("detail", encodeToEucJp(store + " " + item)); // 詳細
+                    submitter.addField("acount", account); // 入出金対象
+                    submitter.addField("card", "checked"); // カード決済
+                    submitter.addField("inout", "out"); // 出金
+                    submitter.addField("amount", payment); // 入出金額
+                    submitter.addField("page", "paymentLogic"); // ページ
+                    submitter.submitForm();
+
+                    // UIスレッドでトーストを表示
+                    runOnUiThread(() -> {
+                        Toast.makeText(ConfirmActivity.this, "送信しました: " + store, Toast.LENGTH_SHORT).show();
+                        finish(); // アクティビティを閉じる
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                        Toast.makeText(ConfirmActivity.this, "送信に失敗しました", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }).start();
         }
     }
 

@@ -151,11 +151,10 @@ public class MainActivity extends AppCompatActivity {
             TextRecognizer recognizer = TextRecognition.getClient(new JapaneseTextRecognizerOptions.Builder().build());
             recognizer.process(image)
                     .addOnSuccessListener(visionText -> {
-                        // OCR結果をTextViewに設定
+                        // OCR結果を取得
                         String ocrResult = visionText.getText();
-                        // OCR結果を表示
-                        //textView.setText(ocrResult);
-                        // 同じ内容をダイアログで表示
+
+                        // OCR結果をダイアログで表示
                         new AlertDialog.Builder(MainActivity.this)
                                 .setTitle("OCR結果")
                                 .setMessage(ocrResult)
