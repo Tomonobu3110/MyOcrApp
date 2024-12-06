@@ -47,19 +47,25 @@
                 android:id="@+id/buttonSubmit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="送信(個人)" />
+                android:text="個人" />
+
+            <Button
+                android:id="@+id/buttonSubmitMmmAndOmm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="立替" />
 
             <Button
                 android:id="@+id/buttonSubmitOmm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="送信(家計)" />
+                android:text="家計" />
 
             <Button
                 android:id="@+id/buttonCancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="キャンセル"
+                android:text="戻る"
                 android:layout_marginStart="16dp" />
         </LinearLayout>
 

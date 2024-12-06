@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import java.io.UnsupportedEncodingException;
@@ -38,6 +39,7 @@ public class ConfirmActivity extends Activity {
         // Buttons
         Button buttonSubmit = findViewById(R.id.buttonSubmit);
         Button buttonSubmitOmm = findViewById(R.id.buttonSubmitOmm);
+        Button buttonSubmitMmmAndOmm = findViewById(R.id.buttonSubmitMmmAndOmm);
         Button buttonCancel = findViewById(R.id.buttonCancel);
 
         // 送信ボタンのクリックリスナー(個人)
@@ -46,7 +48,20 @@ public class ConfirmActivity extends Activity {
             public void onClick(View v) {
                 SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
                 String cgiUrl = preferences.getString("CgiUrl", "");
-                checkAndSubmit(cgiUrl, "private");
+                checkAndSubmit(cgiUrl, "private", false);
+            }
+        });
+
+        // 送信ボタンのクリックリスナー(立替)
+        buttonSubmitMmmAndOmm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+                String cgiUrl  = preferences.getString("CgiUrl", "");
+                String cgi2Url = preferences.getString("Cgi2Url", "");
+                String account = preferences.getString("Account", "");
+                checkAndSubmit(cgiUrl, "public", true); // 個人に送信済みで登録
+                checkAndSubmit(cgi2Url, account, false); // 家計に登録
             }
         });
 
@@ -55,9 +70,9 @@ public class ConfirmActivity extends Activity {
             @Override
             public void onClick(View v) {
                 SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
-                String cgiUrl  = preferences.getString("Cgi2Url", "");
+                String cgi2Url = preferences.getString("Cgi2Url", "");
                 String account = preferences.getString("Account", "");
-                checkAndSubmit(cgiUrl, account);
+                checkAndSubmit(cgi2Url, "public", false); // 家計に登録
             }
         });
 
@@ -100,7 +115,7 @@ public class ConfirmActivity extends Activity {
         }
     }
 
-    public void checkAndSubmit(String cgiUrl, String account) {
+    public void checkAndSubmit(String cgiUrl, String account, Boolean sent) {
         String store   = editTextStore.getText().toString();
         String date_in = editTextDate.getText().toString();
         String payment = editTextPayment.getText().toString();
@@ -112,8 +127,18 @@ public class ConfirmActivity extends Activity {
         try {
             // 入力文字列を Date に変換
             Date date_org = inputFormat.parse(date_in);
-            // Date を出力フォーマットの文字列に変換
-            date_out = outputFormat.format(date_org);
+
+            // もし yyyy が2000未満なら2000を足す
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date_org);
+            if (cal.get(Calendar.YEAR) < 2000) {
+                cal.add(Calendar.YEAR, 2000);
+                date_out = outputFormat.format(cal.getTime());
+            } 
+            else {
+                // Date を出力フォーマットの文字列に変換
+                date_out = outputFormat.format(date_org);
+            }
         } catch (ParseException e) {
             e.printStackTrace();
             Toast.makeText(ConfirmActivity.this, "日付のフォーマットが不正です", Toast.LENGTH_SHORT).show();
@@ -149,10 +174,13 @@ public class ConfirmActivity extends Activity {
                     submitter.addField("group2", "");
                     submitter.addField("detail", encodeToEucJp(store + " " + item)); // 詳細
                     submitter.addField("acount", account); // 入出金対象
-                    submitter.addField("card", "checked"); // カード決済
+                    submitter.addField("card", ""); // カード決済
                     submitter.addField("inout", "out"); // 出金
                     submitter.addField("amount", payment); // 入出金額
                     submitter.addField("page", "paymentLogic"); // ページ
+                    if (sent) {
+                        submitter.addField("sent", "checked"); // 送金済み
+                    }
                     submitter.submitForm();
 
                     // UIスレッドでトーストを表示
