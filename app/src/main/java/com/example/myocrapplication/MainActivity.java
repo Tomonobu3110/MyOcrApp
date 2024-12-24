@@ -70,6 +70,20 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        Button buttonPersonal = findViewById(R.id.buttonPersonal);
+        Button buttonHousehold = findViewById(R.id.buttonHousehold);
+
+        // SharedPreferences から URL を取得
+        SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
+        String cgiUrl = preferences.getString("CgiUrl", "");
+        String cgi2Url = preferences.getString("Cgi2Url", "");
+
+        // 個人ボタンのクリックリスナー
+        buttonPersonal.setOnClickListener(v -> openBrowser(cgiUrl));
+
+        // 家計ボタンのクリックリスナー
+        buttonHousehold.setOnClickListener(v -> openBrowser(cgi2Url));
+
         // ファイルを作るディレクトリ
         outputDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath();
 
@@ -79,6 +93,18 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // カメラの権限をリクエスト
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+        }
+    }
+
+    // ブラウザで URL を開く
+    private void openBrowser(String url) {
+        if (url != null && !url.isEmpty()) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            Intent chooser = Intent.createChooser(intent, "ブラウザを選択");
+            startActivity(chooser);
+        } else {
+            // URL が空の場合の処理（例: エラーメッセージを表示
+            Toast.makeText(this, "URLが設定されていません", Toast.LENGTH_SHORT).show();
         }
     }
 
