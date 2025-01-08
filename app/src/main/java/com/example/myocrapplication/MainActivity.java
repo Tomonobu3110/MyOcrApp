@@ -31,9 +31,16 @@ import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions;
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 import okhttp3.MediaType;
@@ -50,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private PreviewView viewFinder; // PreviewViewの参照
     private Button captureButton;
     private Button settingButton;
+    private Button quickButton;
     private TextView textView;
     String outputDirectory;
 
@@ -63,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         //textView      = findViewById(R.id.textView);
         captureButton = findViewById(R.id.captureButton);
         settingButton = findViewById(R.id.buttonOpenSettings);
+        quickButton   = findViewById(R.id.buttonQuick);
 
         // 設定画面を開く
         settingButton.setOnClickListener(v -> {
@@ -70,13 +79,52 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        Button buttonPersonal = findViewById(R.id.buttonPersonal);
-        Button buttonHousehold = findViewById(R.id.buttonHousehold);
-
         // SharedPreferences から URL を取得
         SharedPreferences preferences = getSharedPreferences("AppSettings", MODE_PRIVATE);
         String cgiUrl = preferences.getString("CgiUrl", "");
         String cgi2Url = preferences.getString("Cgi2Url", "");
+
+        // SharedPreferences からクイック設定を取得
+        String shop = preferences.getString("QuickShop", "");
+        String payment = preferences.getString("QuickPayment", "");
+        String items = preferences.getString("QuickItems", "");
+
+        // クイック登録
+        quickButton.setOnClickListener(v -> {
+            // JSONオブジェクトを作成
+            JSONObject json = new JSONObject();
+
+            try {
+                if (!shop.isEmpty()) {
+                    json.put("shop", shop);
+                }
+                // payment が空文字でない場合のみ追加
+                if (!payment.isEmpty()) {
+                    json.put("payment", payment);
+                }
+                if (!items.isEmpty()) {
+                    JSONArray itemsArray = new JSONArray();
+                    itemsArray.put(items);
+                    json.put("items", itemsArray);
+                }
+                // 日付を追加
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy年MM月dd日", Locale.JAPAN);
+                String date = dateFormat.format(Calendar.getInstance().getTime());
+                json.put("date", date);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            // JSONデータの文字列化
+            String responseJson = json.toString();
+
+            Intent intent = new Intent(MainActivity.this, ConfirmActivity.class);
+            intent.putExtra("response_json", responseJson);
+            startActivity(intent);
+        });
+
+        Button buttonPersonal = findViewById(R.id.buttonPersonal);
+        Button buttonHousehold = findViewById(R.id.buttonHousehold);
 
         // 個人ボタンのクリックリスナー
         buttonPersonal.setOnClickListener(v -> openBrowser(cgiUrl));

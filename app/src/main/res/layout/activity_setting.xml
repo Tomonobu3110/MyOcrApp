@@ -7,36 +7,97 @@
     tools:context=".SettingActivity">
 
     <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Lambda URL -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lambda URL" />
         <EditText
             android:id="@+id/editTextLambdaUrl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Lambda URL" />
 
+        <!-- CGI 1 URL -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CGI 1 URL (個人)" />
         <EditText
             android:id="@+id/editTextCgi1Url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="CGI 1 URL (個人)" />
 
+        <!-- CGI 2 URL -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CGI 2 URL (家計)" />
         <EditText
             android:id="@+id/editTextCgi2Url"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="CGI 2 URL (家計)" />
 
+        <!-- Account -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Account (登録名)" />
         <EditText
             android:id="@+id/editTextAccount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="account (登録名)" />
+            android:hint="Account (登録名)" />
 
+        <!-- 横線の区切り -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#BDBDBD"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Quick Shop -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="店名(クイック入力)" />
+        <EditText
+            android:id="@+id/editTextQuickShop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="店名(クイック入力)" />
+
+        <!-- Quick Payment -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="金額(クイック入力)" />
+        <EditText
+            android:id="@+id/editTextQuickPayment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="金額(クイック入力)" />
+
+        <!-- Quick Items -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="商品名(クイック入力)" />
+        <EditText
+            android:id="@+id/editTextQuickItems"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="商品名(クイック入力)" />
+
+        <!-- Save Button -->
         <Button
             android:id="@+id/buttonSaveSettings"
             android:layout_width="match_parent"
