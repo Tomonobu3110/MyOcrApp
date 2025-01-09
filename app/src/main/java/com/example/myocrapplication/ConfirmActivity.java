@@ -37,6 +37,7 @@ public class ConfirmActivity extends Activity {
         editTextItem = findViewById(R.id.editTextItem);
 
         // Buttons
+        Button buttonToday = findViewById(R.id.buttonToday);
         Button buttonSubmit = findViewById(R.id.buttonSubmit);
         Button buttonSubmitOmm = findViewById(R.id.buttonSubmitOmm);
         Button buttonSubmitMmmAndOmm = findViewById(R.id.buttonSubmitMmmAndOmm);
@@ -82,6 +83,19 @@ public class ConfirmActivity extends Activity {
             public void onClick(View v) {
                 finish(); // アクティビティを閉じる
             }
+        });
+
+        // 今日ボタンのリスナ
+        buttonToday.setOnClickListener(v -> {
+            // 現在の日付を取得
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH) + 1;  // 月は0から始まるので+1
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+            // フォーマットしてEditTextにセット
+            String formattedDate = String.format("%04d年%02d月%02d日", year, month, day);
+            editTextDate.setText(formattedDate);
         });
 
         // 文字列の受け取り

@@ -18,11 +18,24 @@
             android:layout_height="wrap_content"
             android:hint="お店" />
 
-        <EditText
-            android:id="@+id/editTextDate"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="日付" />
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/editTextDate"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:hint="日付" />
+
+            <Button
+                android:id="@+id/buttonToday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="今日" />
+        </LinearLayout>
 
         <EditText
             android:id="@+id/editTextItem"
