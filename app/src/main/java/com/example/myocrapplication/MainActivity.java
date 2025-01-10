@@ -12,6 +12,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import androidx.appcompat.app.AlertDialog;
+
+import android.content.ContentResolver;
 import android.content.DialogInterface;
 
 import android.content.Intent;
@@ -36,7 +38,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -142,6 +147,45 @@ public class MainActivity extends AppCompatActivity {
             // カメラの権限をリクエスト
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
+
+        // 共有インテントからデータを取得
+        Intent intent = getIntent();
+        if (Intent.ACTION_SEND.equals(intent.getAction()) && intent.getType() != null) {
+            if (intent.getType().startsWith("image/")) {
+                Uri imageUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                if (imageUri != null) {
+                    // 画像をImageViewに表示
+                    //imageView.setImageURI(imageUri);
+
+                    // UriからFileオブジェクトを作成してprocessImageを呼び出す
+                    try {
+                        File photoFile = uriToFile(imageUri);
+                        processImage(photoFile);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Toast.makeText(this, "ファイル変換エラー", Toast.LENGTH_SHORT).show();
+                    }                } else {
+                    Toast.makeText(this, "画像の取得に失敗しました", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private File uriToFile(Uri uri) throws IOException {
+        // Uriからファイルパスを取得
+        ContentResolver resolver = getContentResolver();
+        InputStream inputStream = resolver.openInputStream(uri);
+        File tempFile = File.createTempFile("shared_image", ".jpg", getCacheDir());
+        OutputStream outputStream = new FileOutputStream(tempFile);
+
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = inputStream.read(buffer)) > 0) {
+            outputStream.write(buffer, 0, length);
+        }
+        inputStream.close();
+        outputStream.close();
+        return tempFile;
     }
 
     // ブラウザで URL を開く
