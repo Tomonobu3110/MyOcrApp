@@ -4,65 +4,81 @@ import re
 import difflib
 from collections import Counter
 
-# ƒf[ƒ^ƒx[ƒX
+# ãƒ‡ãƒ¼ã‚¿ãƒ™ãƒ¼ã‚¹
 from items import category_items
 from shops import shop_list
 
-# ƒƒOİ’è
+# ãƒ­ã‚°è¨­å®š
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     """
-    LambdaŠÖ”‚ÌƒGƒ“ƒgƒŠƒ|ƒCƒ“ƒg
+    Lambdaé–¢æ•°ã®ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆ
     """
     print(event)
     try:
-        # ƒCƒxƒ“ƒg‚Ìbody‚ğæ“¾‚µAJSON‚Æ‚µ‚ÄƒfƒR[ƒh
+        # ã‚¤ãƒ™ãƒ³ãƒˆã®bodyã‚’å–å¾—ã—ã€JSONã¨ã—ã¦ãƒ‡ã‚³ãƒ¼ãƒ‰
         body = event.get("body", "")
         if not body:
             raise ValueError("Body is empty")
         
-        # body‚ÌJSON‚ğ‰ğÍ
+        # bodyã®JSONã‚’è§£æ
         start = find_third_quote_position(body)
         end   = find_last_quote_position(body)
+        raw_body = body[start + 1:end]
         #print(body[start + 1:end])
-        message = re.sub(r'\s+', ' ', body[start + 1:end])
+        message = re.sub(r'\s+', ' ', raw_body)
         print(message)
         #body_json = json.loads(body_text)
         #message = body_json.get("message", "No message provided")
         
-        # ƒƒO‚Éo—Í
+        # ãƒ­ã‚°ã«å‡ºåŠ›
         logger.info(f"Received message: {message}")
-        print(f"Console log: Received message: {message}")  # ƒRƒ“ƒ\[ƒ‹o—Í
+        print(f"Console log: Received message: {message}")  # ã‚³ãƒ³ã‚½ãƒ¼ãƒ«å‡ºåŠ›
         
-        # ‚¨“X
+        # ãŠåº—
         shop = find_shop_name(message, shop_list, 0.8)
 
-        # “ú•t
         date = ""
-        date_pattern = r'\d{4}”N\s?\d{1,2}Œ\s?\d{1,2}“ú|\d{4}/\d{2}/\d{2}'
-        matches = re.findall(date_pattern, message)
+
+        # æ—¥ä»˜ (1)
+        date_pattern1 = r'\d{4}å¹´\s?\d{1,2}æœˆ\s?\d{1,2}æ—¥'
+        matches = re.findall(date_pattern1, message)
         for match in matches:
             date = match
-
-        # ”ƒ‚Á‚½‚à‚Ì
+        
+        # æ—¥ä»˜(2)
+        date_pattern2 = r'\d{4}/\d{2}/\d{2}'
+        matches = re.findall(date_pattern2, message)
+        for match in matches:
+            parts = match.split('/')
+            date = f"{parts[0]}å¹´{parts[1]}æœˆ{parts[2]}æ—¥"
+            
+        # è²·ã£ãŸã‚‚ã®
         items = []
         add_items_from_message(message, items)
         
-        # ‡Œv‹àŠz
+        # åˆè¨ˆé‡‘é¡
         norm_msg = message.replace("O", "0")
         tel_pattern = r'\d{2}-\d{4}-\d{4}|\d{1}-\d{4}-\d{4}'
-        masked_string = re.sub(date_pattern, 'X', re.sub(tel_pattern, 'X', norm_msg))
+
+        masked_string = re.sub(date_pattern2, 'X', re.sub(date_pattern1, 'X', re.sub(tel_pattern, 'X', norm_msg)))
         numbers = extract_and_convert_numbers(masked_string)
         numbers_as_int = [int(num) for num in numbers]
         payment = find_max_duplicate(numbers_as_int)
+        payment = "" if payment is None else payment  # Noneã®å ´åˆã¯ç©ºæ–‡å­—åˆ—ã«å¤‰æ›
 
-        # ³í‰“š
+        # åˆè¨ˆé‡‘é¡ï¼’
+        norm_raw_body = raw_body.replace("O", "0")
+        body_lines = norm_raw_body.splitlines(keepends=False)
+        print(body_lines)
+
+        # æ­£å¸¸å¿œç­”
         return {
             "statusCode": 200,
             "body": json.dumps({
-                "message": "‰ğÍ¬Œ÷", 
+                "message": "è§£ææˆåŠŸ", 
                 "shop": shop, 
                 "date": date,
                 #"numbers": numbers_as_int,
@@ -86,40 +102,40 @@ def lambda_handler(event, context):
         }
 
 def escape_json_string(input_string):
-    # •¶š—ñ“à‚Ì"‚â\‚È‚Ç‚Ì“Áê•¶š‚ğƒGƒXƒP[ƒv‚·‚é
-    # —á‚¦‚ÎA" -> \", \ -> \\
+    # æ–‡å­—åˆ—å†…ã®"ã‚„\ãªã©ã®ç‰¹æ®Šæ–‡å­—ã‚’ã‚¨ã‚¹ã‚±ãƒ¼ãƒ—ã™ã‚‹
+    # ä¾‹ãˆã°ã€" -> \", \ -> \\
     escaped_string = input_string.replace('"', '\\"').replace('\\', '\\\\')
     return escaped_string
 
 def find_third_quote_position(input_string):
-    # ƒ_ƒuƒ‹ƒNƒI[ƒg‚ÌˆÊ’u‚ğƒŠƒXƒg‚Åæ“¾
+    # ãƒ€ãƒ–ãƒ«ã‚¯ã‚ªãƒ¼ãƒˆã®ä½ç½®ã‚’ãƒªã‚¹ãƒˆã§å–å¾—
     positions = [i for i, char in enumerate(input_string) if char == '"']
     
-    # 3ŒÂ–Ú‚ÌˆÊ’u‚ğ•Ô‚·iƒŠƒXƒg‚ÌƒCƒ“ƒfƒbƒNƒX‚ª2‚ÌˆÊ’u‚ª3ŒÂ–Új
+    # 3å€‹ç›®ã®ä½ç½®ã‚’è¿”ã™ï¼ˆãƒªã‚¹ãƒˆã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãŒ2ã®ä½ç½®ãŒ3å€‹ç›®ï¼‰
     if len(positions) >= 3:
-        return positions[2]  # 0-based index‚È‚Ì‚ÅA3ŒÂ–Ú‚ÍƒCƒ“ƒfƒbƒNƒX2
+        return positions[2]  # 0-based indexãªã®ã§ã€3å€‹ç›®ã¯ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹2
     else:
-        return -1  # 3ŒÂ–Ú‚Ìƒ_ƒuƒ‹ƒNƒI[ƒg‚ª‚È‚¢ê‡‚Í-1‚ğ•Ô‚·
+        return -1  # 3å€‹ç›®ã®ãƒ€ãƒ–ãƒ«ã‚¯ã‚ªãƒ¼ãƒˆãŒãªã„å ´åˆã¯-1ã‚’è¿”ã™
 
 def find_last_quote_position(input_string):
-    # ÅŒã‚Ìƒ_ƒuƒ‹ƒNƒI[ƒg‚ÌˆÊ’u‚ğ•Ô‚·
+    # æœ€å¾Œã®ãƒ€ãƒ–ãƒ«ã‚¯ã‚ªãƒ¼ãƒˆã®ä½ç½®ã‚’è¿”ã™
     position = input_string.rfind('"')
     return position
 
 def find_max_duplicate(numbers):
-    # —v‘f‚ÌoŒ»‰ñ”‚ğƒJƒEƒ“ƒg
+    # è¦ç´ ã®å‡ºç¾å›æ•°ã‚’ã‚«ã‚¦ãƒ³ãƒˆ
     count = Counter(numbers)
-    # oŒ»‰ñ”‚ª2‰ñˆÈã‚Ì—v‘f‚ğ’Šo
+    # å‡ºç¾å›æ•°ãŒ2å›ä»¥ä¸Šã®è¦ç´ ã‚’æŠ½å‡º
     duplicates = [num for num, freq in count.items() if freq >= 2]
-    # d•¡‚·‚é—v‘f‚ÌÅ‘å’l‚ğ•Ô‚·id•¡‚ª‚È‚¢ê‡‚Í None ‚ğ•Ô‚·j
+    # é‡è¤‡ã™ã‚‹è¦ç´ ã®æœ€å¤§å€¤ã‚’è¿”ã™ï¼ˆé‡è¤‡ãŒãªã„å ´åˆã¯ None ã‚’è¿”ã™ï¼‰
     return max(duplicates) if duplicates else None
 
 def extract_and_convert_numbers(input_string):
-    # ƒJƒ“ƒ}‹æØ‚è‚ÆƒXƒy[ƒX‚ğ‹–—e‚·‚é³‹K•\Œ»
+    # ã‚«ãƒ³ãƒåŒºåˆ‡ã‚Šã¨ã‚¹ãƒšãƒ¼ã‚¹ã‚’è¨±å®¹ã™ã‚‹æ­£è¦è¡¨ç¾
     pattern = r'\d{1,3}(?:,\s?\d{3})*'
-    # ƒpƒ^[ƒ“ƒ}ƒbƒ`ƒ“ƒO‚ÅƒJƒ“ƒ}‹æØ‚è‚Ì”š‚ğ‚·‚×‚Ä’Šo
+    # ãƒ‘ã‚¿ãƒ¼ãƒ³ãƒãƒƒãƒãƒ³ã‚°ã§ã‚«ãƒ³ãƒåŒºåˆ‡ã‚Šã®æ•°å­—ã‚’ã™ã¹ã¦æŠ½å‡º
     matches = re.findall(pattern, input_string)
-    # ’Šo‚µ‚½•¶š—ñ‚ğ”’l‚É•ÏŠ·iƒJƒ“ƒ}‚ÆƒXƒy[ƒX‚ğíœj
+    # æŠ½å‡ºã—ãŸæ–‡å­—åˆ—ã‚’æ•°å€¤ã«å¤‰æ›ï¼ˆã‚«ãƒ³ãƒã¨ã‚¹ãƒšãƒ¼ã‚¹ã‚’å‰Šé™¤ï¼‰
     numbers = [int(match.replace(",", "").replace(" ", "")) for match in matches]
     return numbers
 
@@ -127,7 +143,7 @@ def calculate_similarity(str1, str2):
     return difflib.SequenceMatcher(None, str1, str2).ratio()
 
 def contains_similar_string(long_string, target_string, threshold=0.6):
-    # ’·‚¢•¶š—ñ‚Ì’†‚Å•”•ª•¶š—ñ‚ğƒ`ƒFƒbƒN
+    # é•·ã„æ–‡å­—åˆ—ã®ä¸­ã§éƒ¨åˆ†æ–‡å­—åˆ—ã‚’ãƒã‚§ãƒƒã‚¯
     for i in range(len(long_string) - len(target_string) + 1):
         substring = long_string[i:i+len(target_string)]
         similarity = difflib.SequenceMatcher(None, substring, target_string).ratio()
@@ -135,21 +151,21 @@ def contains_similar_string(long_string, target_string, threshold=0.6):
             return True
     return False
 
-# ƒƒbƒZ[ƒW‚ÉŠî‚Ã‚¢‚Ä•i–¼‚ğƒ`ƒFƒbƒN‚·‚éŠÖ”
+# ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã«åŸºã¥ã„ã¦å“åã‚’ãƒã‚§ãƒƒã‚¯ã™ã‚‹é–¢æ•°
 def add_items_from_message(message, items):
-    # ŠeƒJƒeƒSƒŠ‚Æ‚»‚Ì•i–¼ƒŠƒXƒg‚ğƒ`ƒFƒbƒN
+    # å„ã‚«ãƒ†ã‚´ãƒªã¨ãã®å“åãƒªã‚¹ãƒˆã‚’ãƒã‚§ãƒƒã‚¯
     for category_data in category_items:
         category = category_data["category"]
         item_list = category_data["item"]
         
-        # •i–¼ƒŠƒXƒg‚ğƒ`ƒFƒbƒN
+        # å“åãƒªã‚¹ãƒˆã‚’ãƒã‚§ãƒƒã‚¯
         for item in item_list:
-            if contains_similar_string(message, item, 0.7):  # —Ş—“x0.7‚ğg—p
+            if contains_similar_string(message, item, 0.7):  # é¡ä¼¼åº¦0.7ã‚’ä½¿ç”¨
                 items.append(category)
 
 import difflib
 
-# “X•Ü–¼‚ğŒ©‚Â‚¯‚éŠÖ”
+# åº—èˆ—åã‚’è¦‹ã¤ã‘ã‚‹é–¢æ•°
 def find_shop_name(src_string, shop_list, threshold=0.8):
     shop_name = ""
     
@@ -158,19 +174,19 @@ def find_shop_name(src_string, shop_list, threshold=0.8):
         candidates = shop_data.get("candidates", [])
         place_list = shop_data.get("place_list", [])
         
-        # ƒVƒ‡ƒbƒv‚ÌŒó•â‚ğƒ`ƒFƒbƒN
+        # ã‚·ãƒ§ãƒƒãƒ—ã®å€™è£œã‚’ãƒã‚§ãƒƒã‚¯
         for candidate in candidates:
             if contains_similar_string(src_string, candidate, threshold):
                 shop_name = shop
                 break
         
-        # ƒVƒ‡ƒbƒv‚ªŒ©‚Â‚©‚èAplace_list ‚ª‘¶İ‚·‚éê‡
+        # ã‚·ãƒ§ãƒƒãƒ—ãŒè¦‹ã¤ã‹ã‚Šã€place_list ãŒå­˜åœ¨ã™ã‚‹å ´åˆ
         if shop_name and place_list:
             for place_data in place_list:
                 place = place_data["place"]
                 place_candidates = place_data.get("candidates", [])
                 
-                # êŠ‚ÌŒó•â‚ğƒ`ƒFƒbƒN
+                # å ´æ‰€ã®å€™è£œã‚’ãƒã‚§ãƒƒã‚¯
                 for candidate in place_candidates:
                     if contains_similar_string(src_string, candidate, threshold):
                         shop_name = place + shop
@@ -178,8 +194,8 @@ def find_shop_name(src_string, shop_list, threshold=0.8):
     
     return shop_name
 
-# ƒeƒXƒgƒf[ƒ^
-src_string = "ƒtƒ@ƒ~ƒ}‚Å”ƒ‚¢•¨‚µ‚½‚¯‚Çƒ\ƒj[ƒVƒeƒB‚É‚ ‚Á‚½"
+# ãƒ†ã‚¹ãƒˆãƒ‡ãƒ¼ã‚¿
+src_string = "ãƒ•ã‚¡ãƒŸãƒã§è²·ã„ç‰©ã—ãŸã‘ã©ã‚½ãƒ‹ãƒ¼ã‚·ãƒ†ã‚£ã«ã‚ã£ãŸ"
 shop_name = find_shop_name(src_string, shop_list)
 
 print(f"Detected shop name: {shop_name}")
