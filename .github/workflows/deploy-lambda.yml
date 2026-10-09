@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'lambda/**'
+  workflow_dispatch: {}
 
 permissions:
   id-token: write
