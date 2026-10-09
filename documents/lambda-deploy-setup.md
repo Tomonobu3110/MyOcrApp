@@ -87,3 +87,9 @@ GitHubリポジトリの「Actions」タブで`Deploy Lambda`ワークフロー�
 ## 作業ログ
 
 - 2026-10-09: ワークフロー（`.github/workflows/deploy-lambda.yml`）とIAMポリシー一式（`documents/aws-iam/`）を作成。IAMロール自体の作成はユーザー側で実施待ち。ロールARNをGitHub Variablesに登録後、本ワークフローが有効化される。
+- 2026-10-09: ユーザーがAWS CloudShellでセットアップ手順を実施（ClaudeがCloudShellにコマンド文字列を入力し、実行自体はユーザーがEnterキーで行う形で進行）。
+  - OIDCプロバイダー（`token.actions.githubusercontent.com`）は既に作成済みだったことを確認（手順1は不要だった）
+  - IAMロール`github-actions-moneymanager-lambda-deploy`を作成: `arn:aws:iam::819376901674:role/github-actions-moneymanager-lambda-deploy`
+  - 権限ポリシー`lambda-update-code`をロールにアタッチ
+  - GitHubリポジトリの Settings → Secrets and variables → Actions → Variables に `AWS_DEPLOY_ROLE_ARN` を登録（ブラウザで値を確認し、ロールARNと完全一致していることを確認済み）
+  - **これでセットアップ完了。** 次回`lambda/**`を変更して`main`にpushすると、GitHub Actionsが自動でAWS Lambdaへデプロイする。
