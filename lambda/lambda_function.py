@@ -144,10 +144,18 @@ def calculate_similarity(str1, str2):
 
 def contains_similar_string(long_string, target_string, threshold=0.6):
     # 長い文字列の中で部分文字列をチェック
+    # target_string側は固定なのでSequenceMatcherを使い回し、ウィンドウ側(substring)だけ差し替える。
+    # quick_ratio/real_quick_ratioはratio()の上限値を安く計算できる（ratio() <= quick_ratio() <= real_quick_ratio()）ので、
+    # 閾値を超えられないと分かった時点で高コストなratio()の計算をスキップし、結果を変えずに高速化する。
+    matcher = difflib.SequenceMatcher(None, "", target_string)
     for i in range(len(long_string) - len(target_string) + 1):
         substring = long_string[i:i+len(target_string)]
-        similarity = difflib.SequenceMatcher(None, substring, target_string).ratio()
-        if similarity >= threshold:
+        matcher.set_seq1(substring)
+        if matcher.real_quick_ratio() < threshold:
+            continue
+        if matcher.quick_ratio() < threshold:
+            continue
+        if matcher.ratio() >= threshold:
             return True
     return False
 
