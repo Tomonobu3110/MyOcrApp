@@ -93,3 +93,7 @@ GitHubリポジトリの「Actions」タブで`Deploy Lambda`ワークフロー�
   - 権限ポリシー`lambda-update-code`をロールにアタッチ
   - GitHubリポジトリの Settings → Secrets and variables → Actions → Variables に `AWS_DEPLOY_ROLE_ARN` を登録（ブラウザで値を確認し、ロールARNと完全一致していることを確認済み）
   - **これでセットアップ完了。** 次回`lambda/**`を変更して`main`にpushすると、GitHub Actionsが自動でAWS Lambdaへデプロイする。
+- 2026-10-09: ワークフローに`workflow_dispatch`トリガーを追加し（`lambda/**`以外の変更なのでpush自体ではデプロイは走らない）、GitHub Actionsの「Actions」タブから手動実行（Run workflow）で実機テストを実施。
+  - 実行結果: Success（所要11秒）
+  - AWS側: Lambdaコンソールの「最終更新日」が実行直後に更新されたことを確認（OIDC認証・zip化・`update-function-code`・`wait function-updated`まで一連の流れが正常動作）
+  - **パイプライン動作確認済み。** 以降は`lambda/**`の変更をpushするだけで自動デプロイされる。手動で再デプロイしたい場合もActionsタブの「Run workflow」で随時可能。
