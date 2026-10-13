@@ -175,32 +175,38 @@ import difflib
 
 # 店舗名を見つける関数
 def find_shop_name(src_string, shop_list, threshold=0.8):
-    shop_name = ""
-    
     for shop_data in shop_list:
         shop = shop_data["shop"]
         candidates = shop_data.get("candidates", [])
         place_list = shop_data.get("place_list", [])
-        
+
         # ショップの候補をチェック
+        matched = False
         for candidate in candidates:
             if contains_similar_string(src_string, candidate, threshold):
-                shop_name = shop
+                matched = True
                 break
-        
-        # ショップが見つかり、place_list が存在する場合
-        if shop_name and place_list:
-            for place_data in place_list:
-                place = place_data["place"]
-                place_candidates = place_data.get("candidates", [])
-                
-                # 場所の候補をチェック
-                for candidate in place_candidates:
-                    if contains_similar_string(src_string, candidate, threshold):
-                        shop_name = place + shop
-                        break
-    
-    return shop_name
+
+        # このショップが見つからなければ次のショップへ
+        if not matched:
+            continue
+
+        shop_name = shop
+
+        # place_list があれば場所の候補もチェック
+        for place_data in place_list:
+            place = place_data["place"]
+            place_candidates = place_data.get("candidates", [])
+
+            for candidate in place_candidates:
+                if contains_similar_string(src_string, candidate, threshold):
+                    shop_name = place + shop
+                    break
+
+        # ショップが見つかった時点で残りのショップは見る必要がない
+        return shop_name
+
+    return ""
 
 # テストデータ
 src_string = "ファミマで買い物したけどソニーシティにあった"
