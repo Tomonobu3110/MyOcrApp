@@ -5,7 +5,10 @@ shop_list = [
         "candidates": [
             "LAWSON",
             "LAWS0N",
-            "LAWS口N"
+            "LAWS口N",
+            "LAWY日ロN",
+            "LAwB口N",
+            "LAWEロM"
         ],
         "place_list": [
             {
