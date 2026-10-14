@@ -84,6 +84,16 @@ GitHubの当該リポジトリ → Settings → Secrets and variables → Action
 
 GitHubリポジトリの「Actions」タブで`Deploy Lambda`ワークフローの実行結果を確認する。AWS側はLambdaコンソールの「最終更新日」が更新されていれば反映成功。
 
+## ローカルでのAWS CLI利用（`mmm`プロファイル）
+
+このLambda関数のAWSアカウント（`819376901674`）に対してローカルのAWS CLIからアクセスする場合は、プロファイル名`mmm`を使う（IAMユーザー: `claude-cli-mmm`）。
+
+```bash
+aws sts get-caller-identity --profile mmm
+```
+
+デフォルトプロファイルは別のAWSアカウント（`864264994653`）を向いているため、このアカウント向けの操作では必ず`--profile mmm`を指定する。
+
 ## 作業ログ
 
 - 2026-10-09: ワークフロー（`.github/workflows/deploy-lambda.yml`）とIAMポリシー一式（`documents/aws-iam/`）を作成。IAMロール自体の作成はユーザー側で実施待ち。ロールARNをGitHub Variablesに登録後、本ワークフローが有効化される。
@@ -97,3 +107,4 @@ GitHubリポジトリの「Actions」タブで`Deploy Lambda`ワークフロー�
   - 実行結果: Success（所要11秒）
   - AWS側: Lambdaコンソールの「最終更新日」が実行直後に更新されたことを確認（OIDC認証・zip化・`update-function-code`・`wait function-updated`まで一連の流れが正常動作）
   - **パイプライン動作確認済み。** 以降は`lambda/**`の変更をpushするだけで自動デプロイされる。手動で再デプロイしたい場合もActionsタブの「Run workflow」で随時可能。
+- 2026-10-14: ローカルのAWS CLIにこのLambda関数のアカウント（`819376901674`、IAMユーザー`claude-cli-mmm`）向けのプロファイル`mmm`が設定済みであることを確認。以降、このアカウントに対するAWS CLI操作は`--profile mmm`を使う。
