@@ -20,7 +20,22 @@ gradlew.bat lint                   # Android lint
 
 There is currently no test suite worth running — `app/src/test` and `app/src/androidTest` only contain the unmodified Android Studio template tests.
 
-The `lambda/` code has no build/test tooling in this repo. A GitHub Actions workflow (`.github/workflows/deploy-lambda.yml`) auto-deploys `lambda/**` to the `MoneyManagerOcrFunction` Lambda (ap-northeast-1, entry point `lambda_function.lambda_handler`) on every push to `main` that touches that path — see `documents/lambda-deploy-setup.md` for the IAM/OIDC setup behind it. Before this workflow existed, the function was edited directly in the AWS console and could drift from this repo; that should no longer happen going forward as long as changes go through `main`, but if someone edits the function directly in the console again, re-sync by pulling the deployment package as described in that doc.
+The `lambda/` code has no Gradle-integrated build/test tooling, but it does have a standalone Python unit test: `lambda/test_lambda_function.py` runs `lambda_handler` against the real-traffic cases in `lambda/test_cases/test_cases.json` and checks the parsed `shop`/`date`/`payment`/`items` against each case's expected values.
+
+```
+cd lambda
+python -m unittest test_lambda_function -v
+```
+
+On Windows, the default console codepage (cp932) can't encode some characters in the OCR text that `lambda_function.py` prints for debugging, which surfaces as spurious `UnicodeEncodeError`s unrelated to the actual test assertions — force UTF-8 stdout to avoid that:
+
+```
+PYTHONIOENCODING=utf-8 python -m unittest test_lambda_function -v
+```
+
+After running this (or any ad-hoc `python` invocation under `lambda/`), delete the `__pycache__/` directories and `.pyc` files it leaves behind — they're untracked build artifacts, not something to commit or leave lying around.
+
+A GitHub Actions workflow (`.github/workflows/deploy-lambda.yml`) auto-deploys `lambda/**` to the `MoneyManagerOcrFunction` Lambda (ap-northeast-1, entry point `lambda_function.lambda_handler`) on every push to `main` that touches that path — see `documents/lambda-deploy-setup.md` for the IAM/OIDC setup behind it. Before this workflow existed, the function was edited directly in the AWS console and could drift from this repo; that should no longer happen going forward as long as changes go through `main`, but if someone edits the function directly in the console again, re-sync by pulling the deployment package as described in that doc.
 
 ## Architecture
 
